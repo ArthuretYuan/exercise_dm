@@ -12,6 +12,8 @@ torch = { url = "https://download.pytorch.org/whl/cpu/torch-2.3.0-cp311-none-mac
 sentence-transformers = { version = "3.4.1", extras = ["train"] }
 scikit-learn = "1.6.1"
 datasets = "3.2.0"
+fastapi = "0.115.8"
+uvicorn = "0.34.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"

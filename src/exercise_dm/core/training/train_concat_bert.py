@@ -133,15 +133,7 @@ def train(model, train_data, val_data, learning_rate, epochs, batch_size, kpi_sa
 
     
     # Define criterion
-    
-    # NOTE: BCEWithLogitsLoss combines a Sigmoid layer and the BCELoss in one single class.
-    # This version is more numerically stable than using a plain Sigmoid followed by a BCELoss as.
-    # pos_weight is for BCEWithLogitsLoss
-    # ref: https://pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html
     criterion = nn.BCEWithLogitsLoss() 
-    
-    # criterion = nn.BCELoss()
-    # criterion = nn.CrossEntropyLoss(weight=class_weights)
 
     # Deinfine optimizer
     optimizer = Adam(model.parameters(), lr= learning_rate)
@@ -292,58 +284,12 @@ def train(model, train_data, val_data, learning_rate, epochs, batch_size, kpi_sa
             os.remove(fn)
 
 
-
-def test(model, model_name, test_data, batch_size, target_names, kpi_save_path):
-    out_of_sample_prob_epoch = []
-    model.eval()
-    test = Dataset(test_data)
-    test_dataloader = torch.utils.data.DataLoader(test, batch_size=batch_size)
-    device = "mps"
-
-    y_true_test, y_pred_test = [], []
-    with torch.no_grad():
-        print('start testing ...')
-        for test_input, test_label in test_dataloader:
-            test_label = test_label.to(device)
-            if 'xlm' in model_name: 
-                mask = torch.squeeze(test_input['attention_mask']).to(device)
-                input_id = torch.squeeze(test_input['input_ids']).to(device)
-            else:
-                mask = test_input['attention_mask'].to(device)
-                input_id = test_input['input_ids'].to(device)
-            output = model(input_id, mask)
-            
-            for row, row2 in zip(output,test_label):
-                row_sigmoid = 1/(1 + np.exp(-row.to('cpu').detach().numpy()))
-                out_of_sample_prob_epoch.append(row_sigmoid.tolist())
-                threshold = np.ones(8)*0.5
-                row1 = np.greater(row_sigmoid, threshold)
-                row2 = np.array(row2.to('cpu').bool())
-                y_pred_test.append(row1.astype(int))
-                y_true_test.append(row2.astype(int))
-        
-        report = classification_report(np.array(y_true_test),
-                                    np.array(y_pred_test),
-                                    output_dict=False,
-                                    target_names=target_names)
-        
-    
-    with open(kpi_save_path, 'a') as f:
-        f.write(f'-------------testing-------------\n')
-        f.write(f'{report}\n')
-
-    with open(f'out_of_sample_prob_{TIMESTAMP}.jsonl', 'a') as f:
-        for prob, true_label, doc_id in zip(out_of_sample_prob_epoch, test.labels, test.doc_ids):
-            json.dump({'doc_id': doc_id, 'label': true_label, 'probability': prob}, f)
-            f.write('\n')
-
-
 def start_training(input_data_path, kpi_save_path):
 
     data_df = bert_tokenizer(input_data_path)
 
     # load all data
-    df = data_df.sample(frac=1, random_state=105)[:1000]
+    df = data_df.sample(frac=1, random_state=105)
     
     # Split data into train and test (80% train, 20% test)
     train_df, val_test_df = train_test_split(df, test_size=0.2, random_state=42)
@@ -361,20 +307,14 @@ def start_training(input_data_path, kpi_save_path):
         train_data = train_df, 
         val_data = val_df, 
         learning_rate = 5e-5, 
-        epochs = 8, 
-        batch_size = 4, 
+        epochs = 6, 
+        batch_size = 8, 
         kpi_save_path = kpi_save_path
         )
-    # test(model = model,
-    #         model_name = model_name,
-    #         test_data = df_test,
-    #         batch_size = batch_size,
-    #         target_names = target_names,
-    #         kpi_save_path = kpi_save_path)
     
         
 if __name__ == "__main__":
-    kpi_save_path = f'model/concat_bert/kpi.txt'
+    kpi_save_path = f'model/concat_bert/concat_bert_kpi.txt'
     
     start_training(input_data_path="data/data.csv",  kpi_save_path=kpi_save_path)
         

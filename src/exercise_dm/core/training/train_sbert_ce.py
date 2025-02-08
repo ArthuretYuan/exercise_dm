@@ -1,6 +1,7 @@
 # This script trains a Sentence-BERT Cross Encoder model using the 'xxx' pre-trained model
 
 import csv
+import json
 from sklearn.model_selection import train_test_split
 import torch
 from sentence_transformers import CrossEncoder, InputExample
@@ -8,15 +9,24 @@ from torch.utils.data import DataLoader
 from sentence_transformers.cross_encoder.evaluation import CECorrelationEvaluator
 
 
+# load context code mapping
+with open('data/code_context_map_v1.json', 'r') as f:
+    context_code_mapping = json.load(f)
+
 # Load the data
 data, labels = [], []
+
+context_mode = 'text'  # 'code' or 'text'
 
 with open('data/data.csv', newline='') as csvfile:
     csvreader = csv.reader(csvfile, delimiter=',', quotechar='"')
     next(csvreader)  # Skip the header (id,main,target,context,score)
 
     for row in csvreader:
-        data.append([row[1], row[2], row[3]])
+        if context_mode == 'code':
+            data.append([row[1], row[2], row[3]])
+        elif context_mode == 'text':
+            data.append([row[1], row[2], context_code_mapping[row[3]]])
         labels.append(float(row[4]))
 
 # Split the data into train, validation, and test sets (80% train, 10% validation, 10% test)
@@ -54,7 +64,7 @@ train_dataloader = DataLoader(train_samples, shuffle=True, batch_size=8)
 
 # Train the model
 model.fit(
-    output_path="model/sbert_ce",
+    output_path="model/sbert_ce_v2",
     train_dataloader=train_dataloader,
     evaluator=evaluator,
     evaluation_steps=1000,
@@ -67,4 +77,4 @@ model.fit(
 # Evaluate
 
 # Save the models
-torch.save(model, 'model/sbert_ce/sbert_ce_model.pt')
+torch.save(model, 'model/sbert_ce_v2/sbert_ce_model.pt')

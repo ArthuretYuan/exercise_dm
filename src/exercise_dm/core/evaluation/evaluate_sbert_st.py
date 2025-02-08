@@ -1,7 +1,6 @@
 import csv
 import torch
-from sentence_transformers import util
-from sklearn.metrics import classification_report, precision_recall_fscore_support
+from sklearn.metrics import classification_report
 import numpy as np
 
 
