@@ -13,7 +13,7 @@ from transformers import DistilBertModel, BertTokenizer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, precision_recall_fscore_support
 from exercise_dm.utils.quantize_similarity_score import quatization_label
-from settings import PRE_TRAINED_MODEL_CONCAT_BERT
+from exercise_dm.settings import PRE_TRAINED_MODEL_CONCAT_BERT
 
 # For reproducibility
 SEED_INT = 123

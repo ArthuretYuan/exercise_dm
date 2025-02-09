@@ -3,7 +3,7 @@ import json
 import torch
 from transformers import GPT2Tokenizer, GPT2ForSequenceClassification, Trainer, TrainingArguments
 from sklearn.model_selection import train_test_split
-from settings import PRE_TRAINED_MODEL_GPT2
+from exercise_dm.settings import PRE_TRAINED_MODEL_GPT2
 
 # Dataset class
 class NewsDataset(torch.utils.data.Dataset):

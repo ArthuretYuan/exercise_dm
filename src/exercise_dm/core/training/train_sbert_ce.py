@@ -7,7 +7,7 @@ import torch
 from sentence_transformers import CrossEncoder, InputExample
 from torch.utils.data import DataLoader
 from sentence_transformers.cross_encoder.evaluation import CECorrelationEvaluator
-from settings import PRE_TRAINED_MODEL_SBERT_CE
+from exercise_dm.settings import PRE_TRAINED_MODEL_SBERT_CE
 
 
 # load data

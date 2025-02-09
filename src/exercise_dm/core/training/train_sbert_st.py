@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from sentence_transformers import SentenceTransformer, SentenceTransformerTrainer, losses
 from sentence_transformers.training_args import SentenceTransformerTrainingArguments
 from datasets import Dataset
-from settings import PRE_TRAINED_MODEL_SBERT_ST
+from exercise_dm.settings import PRE_TRAINED_MODEL_SBERT_ST
 
 # Load the data
 def load_data(data_path, context_codes_path, context_mode):

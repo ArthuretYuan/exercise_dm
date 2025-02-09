@@ -27,9 +27,13 @@ exercise_dm/
 │       │   │── infer_sbert_ce.py
 │       │   │── infer_sbert_st.py
 │       │   │── infer_gpt2.py
+│       │   │── load_models.py
 │       │── utils
 │       │   │── map_context_code.py
+│       │   │── measure_false_degree.py
+│       │   │── quantize_similarity_score.py
 │       │   │── split_test_data.py
+│       │── settings.py
 │── .gitignore
 │── README.md
 │── pyproject.toml
@@ -44,6 +48,8 @@ exercise_dm/
 
 For a comprehensive explanation of the methodology and performance analysis, please visit the following link.
 
+Report link: https://drive.google.com/file/d/1zSsjEYS-GWJgynUFXWAKRfjRhYx-GKBw/view?usp=sharing
+
 This README file provides instructions on using the model for inference via an API.
 
 # Similarity Score API
@@ -55,7 +61,7 @@ This API provides similarity scoring between two text inputs within the specific
 - python 3.11+
 - pyTorch
 - transformers
-- FfastAPI
+- fastAPI
 - uvicorn
 - sentence-transformers
 - scikit-learn
@@ -75,26 +81,46 @@ The version of the dependencies are specified in pyproject.toml file.
     poetry install
     ```
 
+## Download models
+
+***IMPORTANT!*** 
+
+This service requires a model to function. Please download the model folder before using the API.
+
+Model download link: https://drive.google.com/drive/folders/10XjJU_eIH92HFXwczLfyNnOfPUjIQwC_?usp=sharing
+
 ## Runing the API
 Start the FastAPI server with Uvicorn:
 ```bash
-uvicorn similarity_service:app --host 0.0.0.0 --port 8000
+uvicorn exercise_dm.jobs.build_api:app --host 0.0.0.0 --port 8000
 ```
 
 ## API Usage
-### Endpoint: /predict
+### Endpoint: [/predict](http://localhost:8000/predict)
 ### Method: POST
-### Request format:
+### Request format
 ```json
 {
 	"model": "concat_bert",
+    "context_mode": "concat_bert",
     "text1": "cutting tools",
     "text2": "laser",
     "context": "C09",
     "true_similarity": "0.5"
 }
 ```
-### Response format:
+
+#### model options
+- 'sbert_st': sentence bert - sentence transformer
+- 'sbert_ce': sentence bert - cross encoder
+- 'concat_bert': concatenated bert
+- 'gpt2': gpt2 model
+
+#### context_mode options
+- 'code': When using context code, plesse enter a code (e.g., A01) to the "context" field
+- 'text': When using context text, please provide a meaningful description (e.g., for code ‘A01’, the corresponding text is ‘AGRICULTURE; FORESTRY; ANIMAL HUSBANDRY; HUNTING; TRAPPING; FISHING’, case insensitive).
+
+### Response format
 ```json
 {
     "predicted_similarity": [
@@ -103,5 +129,5 @@ uvicorn similarity_service:app --host 0.0.0.0 --port 8000
 }
 ```
 
-## Contributors:
+## Contributors
 - Yaxiong YUAN
