@@ -85,10 +85,10 @@ The version of the dependencies are specified in pyproject.toml file.
 
 ***IMPORTANT!*** 
 
-- This service requires a model to function. Please download the model folder before using the API.
+- This service requires a model to function. Please download the model folder under this project before using the API.
     - Model download link: https://drive.google.com/drive/folders/10XjJU_eIH92HFXwczLfyNnOfPUjIQwC_?usp=sharing
 
-- The files in the data folder are required for training and inference. Please download them to ensure the service functions properly.
+- The file in the data folder are required for inference. Please download the data folder under this project to ensure the service functions properly.
     - Data download link: https://drive.google.com/drive/folders/1yGSZ4QHcW9t7r_2KvFQnmfIRWh7WW-Is?usp=sharing
 
 ## Runing the API
