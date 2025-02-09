@@ -30,8 +30,6 @@ context_mode = 'text'  # 'code' or 'text'
 
 def bert_tokenizer(input_data_path):
     df = pd.read_csv(input_data_path, sep=',', keep_default_na=False)
-
-    print(df)
     texts_token = []
     tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
 
@@ -42,7 +40,7 @@ def bert_tokenizer(input_data_path):
             input_elements = [sentence1, sentence2, context_code_mapping[context]]
         tok = tokenizer(input_elements, padding='max_length', max_length = 512, truncation=True, return_tensors="pt")
         texts_token.append(tok)
-    df['text_token'] = texts_token
+    df['text_token'] = texts_token 
     return df
 
 

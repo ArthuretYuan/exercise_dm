@@ -26,7 +26,6 @@ class NewsDataset(torch.utils.data.Dataset):
         return len(self.labels)
 
 
-
 # load context code mapping
 with open('data/code_context_map_v1.json', 'r') as f:
     context_code_mapping = json.load(f)
