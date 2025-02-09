@@ -30,16 +30,18 @@ class NewsDataset(torch.utils.data.Dataset):
 # load context code mapping
 with open('data/code_context_map_v1.json', 'r') as f:
     context_code_mapping = json.load(f)
+context_mode = 'text'  # 'code' or 'text'
 
 # Load the data
 data, labels = [], []
-
 with open('data/data.csv', newline='') as csvfile:
     csvreader = csv.reader(csvfile, delimiter=',', quotechar='"')
     next(csvreader)  # Skip the header (id,main,target,context,score)
-
     for row in csvreader:
-        data.append([row[1], row[2], context_code_mapping[row[3]].lower()])
+        if context_mode == 'code':
+            data.append([row[1], row[2], row[3]])
+        elif context_mode == 'text':
+            data.append([row[1], row[2], context_code_mapping[row[3]].lower()])
         labels.append(float(row[4]))
 
 # Split the data into train, validation, and test sets (80% train, 10% validation, 10% test)

@@ -2,7 +2,13 @@ import csv
 import torch
 from sklearn.metrics import classification_report
 import numpy as np
+import json
 
+# load context code mapping
+with open('data/code_context_map_v1.json', 'r') as f:
+    context_code_mapping = json.load(f)
+
+context_mode = 'text'  # 'code' or 'text'
 
 # Load test data
 data, labels = [], []
@@ -10,11 +16,14 @@ with open('data/test_data.csv', newline='') as csvfile:
     csvreader = csv.reader(csvfile, delimiter=',', quotechar='"')
     next(csvreader)  # Skip the header (id,main,target,context,score)
     for row in csvreader:
-        data.append([row[1], row[2], row[3]])
+        if context_mode == 'code':
+            data.append([row[1], row[2], row[3]])
+        elif context_mode == 'text':
+            data.append([row[1], row[2], context_code_mapping[row[3]]])
         labels.append(float(row[4]))
 
 # Load the model
-model = torch.load('model/sbert_ce/sbert_ce_model.pt')
+model = torch.load('model/sbert_ce_v2/sbert_ce_model.pt', map_location=torch.device('mps'))
 
 total_diff = 0
 y_pred_val, y_true_val = [], []
@@ -77,7 +86,7 @@ report = classification_report(
 print(report)
 
 
-kpi_save_path = 'model/sbert_ce/kpi.txt'
+kpi_save_path = 'model/sbert_ce_v2/kpi.txt'
 with open(kpi_save_path, 'a') as f:
     f.write(f'-------------testing preformance report-------------\n')
     f.write(f'Mean Absolute Difference: {mean_diff:.4f}\n')

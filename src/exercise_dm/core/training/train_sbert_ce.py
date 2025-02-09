@@ -12,16 +12,14 @@ from sentence_transformers.cross_encoder.evaluation import CECorrelationEvaluato
 # load context code mapping
 with open('data/code_context_map_v1.json', 'r') as f:
     context_code_mapping = json.load(f)
+context_mode = 'text'  # 'code' or 'text'
+
 
 # Load the data
 data, labels = [], []
-
-context_mode = 'text'  # 'code' or 'text'
-
 with open('data/data.csv', newline='') as csvfile:
     csvreader = csv.reader(csvfile, delimiter=',', quotechar='"')
     next(csvreader)  # Skip the header (id,main,target,context,score)
-
     for row in csvreader:
         if context_mode == 'code':
             data.append([row[1], row[2], row[3]])

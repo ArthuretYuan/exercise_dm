@@ -10,7 +10,7 @@ from sklearn.metrics import classification_report, precision_recall_fscore_suppo
 from torch import nn
 from torch.optim import Adam
 from tqdm import tqdm
-from transformers import DistilBertModel
+from transformers import DistilBertModel, BertTokenizer
 from sklearn.model_selection import train_test_split
 
 
@@ -22,11 +22,11 @@ random.seed(SEED_INT)
 torch.manual_seed(SEED_INT)
 TIMESTAMP = str(datetime.now().strftime("%d_%m_%Y__%H_%M_%S"))
 
+# load context code mapping
+with open('data/code_context_map_v1.json', 'r') as f:
+    context_code_mapping = json.load(f)
 
-import pandas as pd
-import numpy as np
-from tqdm import tqdm
-from transformers import BertTokenizer
+context_mode = 'text'  # 'code' or 'text'
 
 def bert_tokenizer(input_data_path):
     df = pd.read_csv(input_data_path, sep=',', keep_default_na=False)
@@ -36,8 +36,10 @@ def bert_tokenizer(input_data_path):
     tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
 
     for sentence1, sentence2, context in tqdm(zip(df['main'], df['target'], df['context']), total=len(df)):
-        input_elements = [sentence1, sentence2, context]
-
+        if context_mode == 'code':
+            input_elements = [sentence1, sentence2, context]
+        elif context_mode == 'text':
+            input_elements = [sentence1, sentence2, context_code_mapping[context]]
         tok = tokenizer(input_elements, padding='max_length', max_length = 512, truncation=True, return_tensors="pt")
         texts_token.append(tok)
     df['text_token'] = texts_token
@@ -183,10 +185,13 @@ def train(model, train_data, val_data, learning_rate, epochs, batch_size, kpi_sa
             batch_loss.backward()
             optimizer.step()
         
-        report = classification_report(np.array(y_true_train),
-                                       np.array(y_pred_train),
-                                       output_dict=False,
-                                       target_names= ['Unrelated', 'Somewhat related', 'Synonyms', 'Close synonyms', 'Very close'])
+        report = classification_report(
+            np.array(y_true_train),
+            np.array(y_pred_train),
+            output_dict=False,
+            target_names= ['Unrelated', 'Somewhat related', 'Synonyms', 'Close synonyms', 'Very close'])
+        
+        # recoding the kpi during training
         with open(kpi_save_path, 'a') as f:
             f.write(f'-------------training epoch {epoch_num + 1}-------------\n')
             f.write(f'{report}\n')
@@ -213,13 +218,14 @@ def train(model, train_data, val_data, learning_rate, epochs, batch_size, kpi_sa
                 output_dict=False,
                 target_names=['Unrelated', 'Somewhat related', 'Synonyms', 'Close synonyms', 'Very close'])
         
+        # recoding the kpi during training
         with open(kpi_save_path, 'a') as f:
             f.write(f'-------------validation epoch {epoch_num + 1}-------------\n')
             f.write(f'{report}\n')
 
 
         # early termination condition 
-        p, r, f1, s = precision_recall_fscore_support(np.array(y_true_val),
+        _, _, f1, _ = precision_recall_fscore_support(np.array(y_true_val),
                                     np.array(y_pred_val),
                                     average='micro')
         
@@ -272,10 +278,11 @@ def train(model, train_data, val_data, learning_rate, epochs, batch_size, kpi_sa
                 elif len(recent_model_degradations) >= MAX_MODEL_DEGRADATIONS:
                     print(f'Improvement in last epoch was below {100 * CONVERGENCE_THRESHOLD}% and the model has recently degraded {len(recent_model_degradations)} times. Stopping training...')
                     break
-
         else:
             print(epoch_stats_str)
     
+
+    # Save the best model
     if epoch_num != epoch_best_checkpoint:
         print(f'Reloading best checkpoint ({epoch_best_checkpoint+1}-th epoch)...')
         model = torch.load(file_name_best_checkpoint)
