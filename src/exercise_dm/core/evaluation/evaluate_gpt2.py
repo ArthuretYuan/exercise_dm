@@ -95,11 +95,11 @@ def evaluate_gpt2(model_path, test_data_path, context_codes_path, context_mode, 
 
 
 if __name__ == '__main__':
-    CONTEXT_MODE = 'text'
+    CONTEXT_MODE = 'code'
     MODEL_PATH = f'model/gpt2_{CONTEXT_MODE}/gpt2_model.pt'
     TEST_DATA_PATH = 'data/test_data.csv'
     CONTEXT_CODES_PATH = 'data/code_context_map_v1.json'
-    KPI_SAVE_PATH = f'model/gpt2_{CONTEXT_MODE}/kpi.txt'
+    KPI_SAVE_PATH = f'model/gpt2_{CONTEXT_MODE}/testing_kpi.txt'
     evaluate_gpt2(
         model_path=MODEL_PATH,
         test_data_path=TEST_DATA_PATH,

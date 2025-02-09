@@ -68,11 +68,11 @@ def evaluate_concat_bert(model_path, test_data_path, context_codes_path, context
 
 
 if __name__ == '__main__':
-    CONTEXT_MODE = 'text'
+    CONTEXT_MODE = 'code'
     MODEL_PATH = f'model/concat_bert_{CONTEXT_MODE}/concat_bert_model.pt'
     TEST_DATA_PATH = 'data/test_data.csv'
     CONTEXT_CODES_PATH = 'data/code_context_map_v1.json'
-    KPI_SAVE_PATH = f'model/concat_bert_{CONTEXT_MODE}/kpi.txt'
+    KPI_SAVE_PATH = f'model/concat_bert_{CONTEXT_MODE}/testing_kpi.txt'
     evaluate_concat_bert(
         model_path=MODEL_PATH,
         test_data_path=TEST_DATA_PATH,

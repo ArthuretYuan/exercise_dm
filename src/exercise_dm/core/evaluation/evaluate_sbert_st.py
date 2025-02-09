@@ -33,7 +33,7 @@ def evaluate_sbert_st(model_path, test_data_path, context_codes_path, context_mo
     data, labels = load_test_data(test_data_path, context_codes_path, context_mode)
 
     # Load the model
-    model = torch.load(model_path)
+    model = torch.load(model_path, map_location=torch.device('mps'))
     model.eval()  # Set to evaluation mode
 
     # evaluate the model
@@ -90,7 +90,7 @@ def evaluate_sbert_st(model_path, test_data_path, context_codes_path, context_mo
 
 
 if __name__ == '__main__':
-    CONTEXT_MODE = 'code'
+    CONTEXT_MODE = 'text'
     MODEL_PATH = f'model/sbert_st_{CONTEXT_MODE}/sbert_st_model.pt'
     TEST_DATA_PATH = 'data/test_data.csv'
     CONTEXT_CODES_PATH = 'data/code_context_map_v1.json'

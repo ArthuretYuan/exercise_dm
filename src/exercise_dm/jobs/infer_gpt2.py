@@ -1,5 +1,6 @@
 import torch
 from transformers import GPT2Tokenizer
+from exercise_dm.jobs.load_models import DEVICE 
 
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 tokenizer.pad_token = tokenizer.eos_token  # Use <|endoftext|> as padding
@@ -11,7 +12,8 @@ def encode_sentences(data, tokenizer):
 
 def predict_with_gpt2(model, text1, text2, context):
     texts = [text1, text2, context]
-    encodings = encode_sentences([texts], tokenizer).to('mps')
+    encodings = encode_sentences([texts], tokenizer).to(DEVICE)
     with torch.no_grad():
-        similarity_score = model(**encodings).logits[0][0]
-    similarity_score = max(0, min(1, similarity_score))
+        pre_score = model(**encodings).logits[0][0]
+    pre_score = max(0, min(1, pre_score))
+    return pre_score
