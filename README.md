@@ -81,13 +81,19 @@ The version of the dependencies are specified in pyproject.toml file.
     poetry install
     ```
 
-## Download models
+## Download models and data
 
 ***IMPORTANT!*** 
 
 This service requires a model to function. Please download the model folder before using the API.
 
 Model download link: https://drive.google.com/drive/folders/10XjJU_eIH92HFXwczLfyNnOfPUjIQwC_?usp=sharing
+
+The files in the data folder are required for training and inference. Please download them to ensure the service functions properly.
+
+Data download link:
+
+Data download link: https://drive.google.com/drive/folders/1yGSZ4QHcW9t7r_2KvFQnmfIRWh7WW-Is?usp=sharing
 
 ## Runing the API
 Start the FastAPI server with Uvicorn:
@@ -101,12 +107,12 @@ uvicorn exercise_dm.jobs.build_api:app --host 0.0.0.0 --port 8000
 ### Request format
 ```json
 {
-	"model": "concat_bert",
-    "context_mode": "concat_bert",
-    "text1": "cutting tools",
-    "text2": "laser",
-    "context": "C09",
-    "true_similarity": "0.5"
+    "model": "concat_bert",
+    "context_mode": "code",
+    "text1": "walnut oil",
+    "text2": "juglans regia fruit oil",
+    "context": "C08",
+    "true_similarity": "0.75"
 }
 ```
 
