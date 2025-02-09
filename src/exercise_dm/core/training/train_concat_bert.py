@@ -2,17 +2,18 @@ import json
 import os
 import random
 import shutil
-from datetime import datetime
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.metrics import classification_report, precision_recall_fscore_support
 from torch import nn
 from torch.optim import Adam
 from tqdm import tqdm
+from datetime import datetime
 from transformers import DistilBertModel, BertTokenizer
 from sklearn.model_selection import train_test_split
-
+from sklearn.metrics import classification_report, precision_recall_fscore_support
+from exercise_dm.utils.quantize_similarity_score import quatization_label
+from settings import PRE_TRAINED_MODEL_CONCAT_BERT
 
 # For reproducibility
 SEED_INT = 123
@@ -22,14 +23,15 @@ random.seed(SEED_INT)
 torch.manual_seed(SEED_INT)
 TIMESTAMP = str(datetime.now().strftime("%d_%m_%Y__%H_%M_%S"))
 
-# load context code mapping
-with open('data/code_context_map_v1.json', 'r') as f:
-    context_code_mapping = json.load(f)
 
-context_mode = 'text'  # 'code' or 'text'
+def bert_tokenizer(data_path, context_codes_path, context_mode):
+    
+    # load context code mapping
+    with open(context_codes_path, 'r') as f:
+        context_code_mapping = json.load(f)
 
-def bert_tokenizer(input_data_path):
-    df = pd.read_csv(input_data_path, sep=',', keep_default_na=False)
+    # load data and tokenize data
+    df = pd.read_csv(data_path, sep=',', keep_default_na=False)
     texts_token = []
     tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
 
@@ -44,13 +46,13 @@ def bert_tokenizer(input_data_path):
     return df
 
 
-
+# Build the concatenated BERT model
 class DistilBertConcatMultiPassageClassifier(nn.Module):
 
     def __init__(self, passage_count, class_count, dropout):
         super(DistilBertConcatMultiPassageClassifier, self).__init__()
         self.passage_count = passage_count
-        self.distilbert = DistilBertModel.from_pretrained('distilbert-base-cased')
+        self.distilbert = DistilBertModel.from_pretrained(PRE_TRAINED_MODEL_CONCAT_BERT)
         self.concat_dropout = nn.Dropout(dropout)
         self.concat_linear = nn.Linear(768 * passage_count, 768 * passage_count)
         self.concat_relu = nn.ReLU()
@@ -86,7 +88,7 @@ class DistilBertConcatMultiPassageClassifier(nn.Module):
         #prob = self.softmax(final_layer)
         return classif_linear_output
 
-
+# Dataset class
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, df):
         self.labels = [np.float32(label) for label in df['score']]
@@ -111,52 +113,45 @@ class Dataset(torch.utils.data.Dataset):
         batch_y = self.get_batch_labels(idx)
         return batch_texts, batch_y
 
-
-def quatization_label(label):
-    if label < 0.125:
-        return 0
-    elif label >= 0.125 and label < 0.375:
-        return 1
-    elif label >= 0.375 and label < 0.625:
-        return 2
-    elif label >= 0.625 and label < 0.875:
-        return 3
-    else:
-        return 4
-
-def train(model, train_data, val_data, learning_rate, epochs, batch_size, kpi_save_path):
+# Training function
+def trainer(model, train_data, val_data, learning_rate, epochs, batch_size, output_path, kpi_save_path):
+    
+    # load data
     train, val = Dataset(train_data), Dataset(val_data)
     train_dataloader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=True, num_workers=10, drop_last=True)
     val_dataloader = torch.utils.data.DataLoader(val, batch_size=batch_size, num_workers=10, drop_last=True)
+    
+    # load mode to GPU device if available
     device = torch.device("mps")
     model = model.to(device)
 
-    
-    # Define criterion
+    # define criterion
     criterion = nn.BCEWithLogitsLoss() 
 
-    # Deinfine optimizer
+    # deinfine optimizer
     optimizer = Adam(model.parameters(), lr= learning_rate)
 
+    # parameters for early stopping condition
     val_accuracy_best_checkpoint = -1
     val_accuracy_values = []
     epoch_best_checkpoint = -1
-    file_name_best_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ckpt_folder")
+    file_name_best_path = f"{output_path}/ckpt_folder"
     if os.path.isdir(file_name_best_path):
         shutil.rmtree(file_name_best_path)
     file_name_best_checkpoint = ''
     file_names_saved_checkpoints = []
     recent_model_degradations = []
 
-    
+    # Start training epochs
     for epoch_num in range(epochs):
         model.train()
         print('start epoch {}, number of iteration is {}'.format(epoch_num + 1, len(train_dataloader)))
         total_loss_train = 0
         y_true_train, y_pred_train = [], []
 
-        
-        # NOTE: training
+        ################################################
+        ############### Training Phase #################
+        ################################################ 
         training_iter = 0
         for train_input, train_label in tqdm(train_dataloader):
             training_iter += 1
@@ -195,7 +190,9 @@ def train(model, train_data, val_data, learning_rate, epochs, batch_size, kpi_sa
             f.write(f'{report}\n')
 
         
-        # NOTE: validation
+        ################################################
+        ############# Validation Phase #################
+        ################################################
         model.eval()
         with torch.no_grad():
             y_true_val, y_pred_val = [], []
@@ -221,22 +218,24 @@ def train(model, train_data, val_data, learning_rate, epochs, batch_size, kpi_sa
             f.write(f'-------------validation epoch {epoch_num + 1}-------------\n')
             f.write(f'{report}\n')
 
-
-        # early termination condition 
-        _, _, f1, _ = precision_recall_fscore_support(np.array(y_true_val),
-                                    np.array(y_pred_val),
-                                    average='micro')
+       
+        ################################################
+        ######### Early Termination Condition ##########
+        ################################################ 
+        _, _, validation_measure, _ = precision_recall_fscore_support(
+            np.array(y_true_val),
+            np.array(y_pred_val),
+            average='micro')
         
-        validation_accuracy = f1
-        val_accuracy_values.append(validation_accuracy)
-        epoch_stats_str = f'validation_f1: {f1}'
+        val_accuracy_values.append(validation_measure)
+        epoch_stats_str = f'validation_f1: {validation_measure}'
         
         CONVERGENCE_THRESHOLD = 0.001
         MAX_MODEL_DEGRADATIONS = 3
         MIN_NUM_EPOCHES = 4
 
-        if validation_accuracy > val_accuracy_best_checkpoint:
-            val_accuracy_best_checkpoint = validation_accuracy
+        if validation_measure > val_accuracy_best_checkpoint:
+            val_accuracy_best_checkpoint = validation_measure
             epoch_best_checkpoint = epoch_num
             if not os.path.exists(file_name_best_path):
                 os.makedirs(file_name_best_path, exist_ok=True)
@@ -289,37 +288,44 @@ def train(model, train_data, val_data, learning_rate, epochs, batch_size, kpi_sa
             os.remove(fn)
 
 
-def start_training(input_data_path, kpi_save_path):
+def train_concat_bert(data_path, context_codes_path, context_mode, output_path):
 
-    data_df = bert_tokenizer(input_data_path)
-
-    # load all data
+    # Split data into train, val, and test (80% train, 10% val, 10% test)
+    data_df = bert_tokenizer(data_path, context_codes_path, context_mode)
     df = data_df.sample(frac=1, random_state=105)
-    
-    # Split data into train and test (80% train, 20% test)
     train_df, val_test_df = train_test_split(df, test_size=0.2, random_state=42)
-    val_df, test_df = train_test_split(val_test_df, test_size=0.5, random_state=42)
-    
-    # create a customized concatenated bert model
+    val_df, _ = train_test_split(val_test_df, test_size=0.5, random_state=42)
+
+    # Create a customized concatenated BERT model
     model = DistilBertConcatMultiPassageClassifier(
         passage_count=3,
         class_count=1,
         dropout=0.1)
-
-    print(f'Training size: {len(train_df)} | Training size: {len(val_df)} | Testing size: {len(test_df)}')
     
-    train(model = model, 
+    # Call the defined training function
+    trainer(
+        model = model, 
         train_data = train_df, 
         val_data = val_df, 
         learning_rate = 5e-5, 
         epochs = 6, 
-        batch_size = 8, 
-        kpi_save_path = kpi_save_path
+        batch_size = 8,
+        output_path = output_path,
+        kpi_save_path = f'{output_path}/training_kpi.txt'
         )
     
-        
-if __name__ == "__main__":
-    kpi_save_path = f'model/concat_bert/concat_bert_kpi.txt'
-    
-    start_training(input_data_path="data/data.csv",  kpi_save_path=kpi_save_path)
+    # Save the model
+    torch.save(model, f'{output_path}/gpt2_model.pt')
+
+
+if __name__ == '__main__':
+    DATA_PATH = 'data/data.csv'
+    CONTEXT_CODES_PATH = 'data/code_context_map_v1.json'
+    CONTEXT_MODE = 'text'  # 'code' or 'text'
+    OUTPUT_PATH = f"model/sbert_ce_{CONTEXT_MODE}"
+    train_concat_bert(
+        data_path=DATA_PATH, 
+        context_codes_path=CONTEXT_CODES_PATH,
+        context_mode=CONTEXT_MODE,
+        output_path=OUTPUT_PATH)
         
