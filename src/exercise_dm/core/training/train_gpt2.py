@@ -1,3 +1,5 @@
+# This script trains a GPT2 model using the 'gpt2' pre-trained model
+
 import csv
 import json
 import torch

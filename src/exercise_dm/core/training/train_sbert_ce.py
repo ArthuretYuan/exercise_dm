@@ -1,4 +1,4 @@
-# This script trains a Sentence-BERT Cross Encoder model using the 'xxx' pre-trained model
+# This script trains a Sentence-BERT Cross Encoder model using the 'cross-encoder/stsb-roberta-base' pre-trained model
 
 import csv
 import json

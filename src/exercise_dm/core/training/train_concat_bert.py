@@ -1,3 +1,5 @@
+# This script trains a concat BERT model using the 'distilbert-base-cased' pre-trained model
+
 import json
 import os
 import random
