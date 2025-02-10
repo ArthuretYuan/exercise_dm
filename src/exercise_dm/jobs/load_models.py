@@ -12,8 +12,10 @@ FINETUNED_MODEL_GPT2_TEXT = "model/gpt2_text/gpt2_model.pt"
 
 if torch.cuda.is_available():
     DEVICE = "cuda:0"
-else:
+elif torch.backends.mps.is_available():
     DEVICE = "mps"
+else:
+    DEVICE = "cpu"
 
 def model_loader(model_name, context_mode):
     model = None
