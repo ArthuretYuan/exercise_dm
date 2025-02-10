@@ -10,7 +10,10 @@ FINETUNED_MODEL_CONCAT_BERT_TEXT = "model/concat_bert_text/concat_bert_model.pt"
 FINETUNED_MODEL_GPT2_CODE = "model/gpt2_code/gpt2_model.pt"
 FINETUNED_MODEL_GPT2_TEXT = "model/gpt2_text/gpt2_model.pt"
 
-DEVICE = "mps"
+if torch.cuda.is_available():
+    DEVICE = "cuda:0"
+else:
+    DEVICE = "mps"
 
 def model_loader(model_name, context_mode):
     model = None

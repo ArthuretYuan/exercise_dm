@@ -72,33 +72,46 @@ The version of the dependencies are specified in pyproject.toml file.
 ## Installation
 1. Clone the repository:
     ```bash
-    git clone https://github.com/your-repo/similarity-service.git
-    cd similarity-service
+    git clone https://github.com/ArthuretYuan/exercise_dm.git
+    cd exercise_dm
     ```
-2. Install dependencies:
+2. Create a conda environment
     ```bash
-    pip install setuptools
+    conda create -n env_similarity python=3.11
+    ```
+3. Install dependencies:
+    ```bash
+    pip install setuptools poetry
     poetry install
     ```
+
+**NOTE: The pytorch version is specific for MacOS, if you use Linux with CUDA, please select a correct torch version, for example,** 
+```bash
+torch = { url = "https://download.pytorch.org/whl/cu121/torch-2.3.0%2Bcu121-cp311-cp311-linux_x86_64.whl#sha256=5df7e3cb3961018a891e4edef1e0bc1f3304a8d943f81b24a8c6bf687ca49a67" }
+```
 
 ## Download models and data
 
 ***IMPORTANT!*** 
 
-- This service requires a model to function. Please download the model folder under this project before using the API.
+- This service requires a model to function. Please download the model folder **under this project's root** before using the API.
     - Model download link: https://drive.google.com/drive/folders/10XjJU_eIH92HFXwczLfyNnOfPUjIQwC_?usp=sharing
 
-- The file in the data folder are required for inference. Please download the data folder under this project to ensure the service functions properly.
+- The file in the data folder are required for inference. Please download the data folder **under this project's root** to ensure the service functions properly.
     - Data download link: https://drive.google.com/drive/folders/1yGSZ4QHcW9t7r_2KvFQnmfIRWh7WW-Is?usp=sharing
 
 ## Runing the API
 Start the FastAPI server with Uvicorn:
 ```bash
+python3 src/exercise_dm/jobs/build_api.py
+```
+or
+```bash
 uvicorn exercise_dm.jobs.build_api:app --host 0.0.0.0 --port 8000
 ```
 
 ## API Usage
-### Endpoint: [/predict](http://localhost:8000/predict)
+### Endpoint: [http://localhost:8000/predict](http://localhost:8000/predict)
 ### Method: POST
 ### Request format
 ```json
